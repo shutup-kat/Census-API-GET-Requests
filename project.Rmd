@@ -1,0 +1,290 @@
+---
+title: "POLS 3316: Kat's Project"
+output: html_notebook
+---
+
+
+1. import data?
+2. parsing txt/csv data: 
+I have below, a vector of 53 colors for each state and territory in my data set. 
+
+The function createdf() take in as parameters -> the data frame to be used, what variable I want to be used as a factor, in this case I use states names, and years. I then plot the data with a legend with colors associated with each state. Whatever I pass in to be used as a factor will be what populates the legend. 
+
+Before I can pass any parameters to my createdf function, I must retrieve the data first. 
+I use as data frame to read my csv file and create a data frame from it. I then list the names which will tell me the column names to use when accessing the frame using $ character. 
+
+after passing all the information in lines 60-75, I then make a separate plot looking at the relationship between poverty + enrollment. **note, first createdf is to be ignored, is there to set size of graphic.
+
+at the end of this R chunk, I find the mean, median, and standard deviation of poverty and enrollment gorss numbers. 
+
+```{r}
+myColors = c( "#FFBF00", "#9966CC", "#FBCEB1", "#7FFFD4", "#007FFF", "#89CFF0", "#CB4154", "#000000", "#0000FF", "#0095B6", "#CD7F32", "#993300", "#800020", "#702963", "#DE3163", "#7FFF00", "#6F4E37", "#FF7F50", "#00FFFF", "#50C878", "#00FF3F", "#FFD700", "#BEBEBE", "#008001", "#4B0082", "#29AB87", "#C8A2C8", "#FF00FF", "#FF00AF", "#800000", "#E0B0FF", "#000080", "#CC7722", "#808000", "#FF6600", "#FF4500", "#DA70D6", "#FFE5B4", "#CCCCFF", "#FFC0CB", "#8E4585", "#003153", "#CC8899", "#6A0DAD", "#E30B5C", "#FF0000", "#C71585", "#FA8072", "#92000A", "#0F52BA", "#C0C0C0", "#708090", "#00FF7F" )
+
+createdf <- function(myData, myFactor, col1, Year, myColors, t, yl){
+  myFactor = factor(myFactor)
+  levels(myData$myFactor)
+  newx <- seq(min(Year), max(col1), length.out = 520)
+  mymod <- lm(col1 ~ Year)
+  predic <- predict(mymod, newdata = data.frame(x=newx), interval = 'confidence', level = .95)
+  
+  with(myData, plot(Year, col1, col = myColors[myFactor], ylab = yl))
+  op <- par(cex = 0.37)
+  with(myData, legend('topleft', legend = levels(myFactor), col = myColors, pch=1, title = "States"))
+  title(t)
+  abline(mymod)
+  lines(newx, predic[,3], lty = 'dashed', col = 'blue')
+  lines(newx, predic[ ,2], lty = 'dashed', col = 'red')
+  
+}
+
+population_data <- as.data.frame(read.csv(file = "population.csv", header = TRUE, sep=","))
+names(population_data)
+poverty_data <- as.data.frame(read.csv( file = "poverty.csv", header = TRUE, sep = ","))
+names(poverty_data)
+enroll_data <- as.data.frame(read.csv(file = "enrollment.csv", header = TRUE, sep = ","))
+names(enroll_data)
+# to set graphic size
+dev.new(width=300,height=850, unit = "px", noRStudioGD = TRUE)
+
+#ignore this first call, i used it to resize the following windows.
+createdf(population_data, population_data$Population, population_data$S1701_C01_001E, population_data$Year, myColors, "IGNORE", "IGNORE")
+
+# color coded plots for each respectively. 
+createdf(population_data, population_data$Population, population_data$S1701_C01_001E, population_data$Year, myColors, "Population of the States from 2010-2019", "Population")
+
+createdf(poverty_data, poverty_data$Poverty, poverty_data$S1701_C02_001E, poverty_data$Year, myColors, "Poverty of the States from 2010-2019", "Poverty")
+
+createdf(enroll_data, enroll_data$Enrollment, enroll_data$S1401_C01_001E, enroll_data$Year, myColors, "Enrollment of the States from 2010-2019", "Enrollment")
+
+# ---------------------------------------------------------------------------------------------------- #
+                  #table looking at relationship between enrollment and poverty
+theFactor = factor(poverty_data$Year)
+levels(poverty_data$theFactor)
+
+newx <- seq(min(enroll_data$S1401_C01_001E), max(poverty_data$S1701_C02_001E), length.out = 520)
+mymod <- lm(poverty_data$S1701_C02_001E ~ enroll_data$S1401_C01_001E)
+predic <- predict(mymod, newdata = data.frame(x=newx), interval = 'confidence', level = .95)
+
+plot(enroll_data$S1401_C01_001E, poverty_data$S1701_C02_001E, col = myColors[theFactor], ylab = "Poverty", xlab = "Enrollment")
+legend("topleft", legend = levels(theFactor), col = myColors, pch=1, title = "years")
+title("Poverty v.s. Enrollment from years 2010-2019")
+
+#abline(mymod)
+#lines(newx, predic[,3], lty = 'dashed', col = 'blue')
+#lines(newx, predic[ ,2], lty = 'dashed', col = 'red')
+# ---------------------------------------------------------------------------------------------------- #
+
+#mean median and sd for poverty and enrollment
+mean(poverty_data$S1701_C02_001E)
+median(poverty_data$S1701_C02_001E)
+sd(poverty_data$S1701_C02_001E)
+
+mean(enroll_data$S1401_C01_001E)
+median(enroll_data$S1401_C01_001E)
+sd(enroll_data$S1401_C01_001E)
+
+```
+
+3. more about my data, histograms
+
+```{r}
+#?plot
+#?hist
+
+hist(population_data$S1701_C01_001E)
+hist(poverty_data$S1701_C02_001E, col = "red")
+hist(enroll_data$S1401_C01_001E, col = "blue")
+
+```
+
+4. The summary of my data, includes lm regression, t test, and stargazer formated table for easy viewing. 
+ignore warning, does not apply to my table. 
+
+```{r}
+library(stargazer)
+
+summary(lm(population_data$S1701_C01_001E ~ population_data$Year))
+summary(lm(poverty_data$S1701_C02_001E ~ poverty_data$Year))
+summary(lm(enroll_data$S1401_C01_001E ~ enroll_data$Year))
+summary(lm(enroll_data$S1401_C01_001E ~ poverty_data$S1701_C02_001E))
+
+model1 <- lm(enroll_data$S1401_C01_001E ~ poverty_data$S1701_C02_001E + enroll_data$Year + population_data$S1701_C01_001E)
+t.test(enroll_data$S1401_C01_001E, poverty_data$S1701_C02_001E, var.equal = TRUE)
+
+stargazer(model1, type="text")
+
+```
+
+http://kat-hernandez.info/
+
+
+
+extra code: 
+```{r}
+#names <- c("southwark & Vauxhall(A)", "Lambeth(B)")
+# observed
+deaths_C <- c(1262, 97)
+notdeaths_D <- c(38785, 26010)
+AC_BC <- c()
+AD_BD <- c()
+k <- 0
+
+pre_chi <- function(a, b, AC_BC, AD_BD, k){
+  k <- sum(a) + sum(b)
+  print("sample size:")
+  print(k)
+  for (i in 1:length(a)) {
+    Trow <- a[i] + b[i]
+    Tcol <- sum(a)
+    ev <- (Trow * Tcol) / k
+    AC_BC[i] <- ev
+    print("AC_BC")
+    print(ev)
+  }
+  for (i in 1:length(b)) {
+    Trow <- a[i] + b[i]
+    Tcol <- sum(b)
+    ev <- (Trow * Tcol) / k
+    AD_BD[i] <- ev
+    print("AD_BD")
+    print(ev)
+  }
+  result <- c(k, AC_BC, AD_BD)
+  temp3 = 0
+  for (i in 1:length(a)) {
+    temp1 <- ( ((a[i] - AC_BC[i])^2) / AC_BC[i] )
+    temp2 <- ( ((b[i] - AD_BD[i])^2) / AD_BD[i] )
+    temp3 <- temp3 + temp1 + temp2
+  }
+  print("chi score?")
+  print(temp3)
+  return(result)
+}
+
+# ------ call for pre-chi -------- #
+#result <- pre_chi(deaths_C, notdeaths_D, AC_BC, AD_BD, k)
+#result # contains: k, AC, BC ; AD, BD
+
+rep <- c(25, 50)
+dem <- c(35, 10)
+result <- pre_chi(rep, dem, AC_BC, AD_BD, k)
+
+# next problem
+# observed
+groupA <- c(47.68, 48.02, 51.11, 50.50, 48.69, 51.12, 50.24, 48.49, 48.4)
+groupB <- c(48.89, 48.77, 49.76, 51.71, 49.44, 49.77, 51.45, 49.24, 47.05)
+# expected
+gA <- c()
+gB <- c()
+# sample size
+k <- 0
+# pre_chi function call ; result contains all values found.
+#result <- pre_chi(groupA, groupB, gA, gB, k)
+```
+
+extra code: 
+
+```{r}
+deaths_C <- c(1262, 97)
+notdeaths_D <- c(38785, 26010)
+
+# sample size
+kt <- sum(deaths_C) + sum(notdeaths_D)
+#kt
+# observed
+dO <- c()
+nO <- c()
+
+for (i in 1:length(deaths_C)) {
+  Trow <- notdeaths_D[i] + deaths_C[i]
+  Tcol <- sum(deaths_C)
+  ev <- (Trow * Tcol) / kt
+  dO[i] <- ev
+}
+for (i in 1:length(notdeaths_D)) {
+  Trow <- notdeaths_D[i] + deaths_C[i]
+  Tcol <- sum(notdeaths_D)
+  ev <- (Trow * Tcol) / kt
+  nO[i] <- ev
+}
+#prints like : AB, BC ; AD, BD -> when called like : deaths then not deaths
+#dO
+#nO
+
+
+# other group a and b
+myvec <- c()
+names <- c("group A", "group B")
+# observed
+groupA <- c(47.68, 48.02, 51.11, 50.50, 48.69, 51.12, 50.24, 48.49, 48.4)
+groupB <- c(48.89, 48.77, 49.76, 51.71, 49.44, 49.77, 51.45, 49.24, 47.05)
+# finds sample size
+k <- sum(groupA) + sum(groupB)
+#k
+# expected
+gA <- c()
+gB <- c()
+for (i in 1:length(groupA)) {
+  Trow <- groupA[i] + groupB[i]
+  Tcol <- sum(groupA)
+  ev <- (Trow * Tcol) / k
+  gA[i] = ev
+}
+for (i in 1:length(groupB)) {
+  Trow <- groupB[i] + groupA[i]
+  Tcol <- sum(groupB)
+  ev <- (Trow * Tcol)/k
+  gB[i] <- ev
+}
+#gA
+#gB
+
+ 
+for (i in 1:length(groupA)) {
+  temp <- ((groupA[i] + groupB[i])^2 )/ k
+  #print(temp)
+  myvec[i] = temp
+}
+themean <-mean(myvec)
+thesd <-sd(myvec)
+temp2 <- 0
+for (i in 1:length(groupA)) {
+  temp2 <- temp2 + (groupA[i] - themean)^2
+}
+#print(temp2/ (thesd)^2)
+
+#mydf <- data.frame(groupA, groupB)
+#mydf <- data.frame(rep, dem)
+# find expexted values
+
+#mydf
+#chisq.test(mydf$groupA, mydf$groupB, correct = FALSE)
+#?t.test
+before <- c(49.9, 50.1, 46.5, 48.4, 54.1, 54.2, 48.8, 48.7)
+after <- c(48.0, 46.3, 47.2, 43.0, 46.0, 47.7, 43.6, 45.0)
+
+#for (i in 1:length(before)) {
+ # temp <- ((before[i] + groupB[i])^2 )/ k
+  #print(temp)
+ # myvec[i] = temp
+#}
+#themean <-mean(myvec)
+#thesd <-sd(myvec)
+#temp2 <- 0
+for (i in 1:length(before)) {
+  temp2 <- temp2 + (after[i] - before[i])^2
+  #temp2 <- temp2 + (after[i] - (-4.2375) )^2
+}
+myx <- sum(before) + sum(after)
+print(temp2/ 7)
+
+mydf <- data.frame(before, after)
+t.test(mydf$after, mydf$before, paired = TRUE)
+?qt
+qt(0.05, 8)
+
+
+```
+
+
+
